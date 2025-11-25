@@ -1,4 +1,110 @@
 import { mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+const questionSchema = v.object({
+  prompt: v.string(),
+  type: v.union(v.literal("text"), v.literal("multiple_choice"), v.literal("numeric"), v.literal("media")),
+  correctAnswer: v.string(),
+  acceptedAnswers: v.optional(v.array(v.string())),
+  options: v.optional(v.array(v.string())),
+  mediaUrl: v.optional(v.string()),
+  mediaType: v.optional(v.union(v.literal("image"), v.literal("video"), v.literal("audio"), v.literal("youtube"))),
+  answerFields: v.optional(v.array(v.object({
+    id: v.string(),
+    label: v.string(),
+    correctAnswer: v.string(),
+    acceptedAnswers: v.optional(v.array(v.string())),
+  }))),
+  points: v.number(),
+});
+
+const roundSchema = v.object({
+  title: v.string(),
+  type: v.union(v.literal("standard"), v.literal("listening"), v.literal("media")),
+  questions: v.array(questionSchema),
+});
+
+const gameSchema = v.object({
+  joinCode: v.string(),
+  title: v.string(),
+  description: v.optional(v.string()),
+  maxTeams: v.optional(v.number()),
+  rounds: v.array(roundSchema),
+});
+
+export const importGame = mutation({
+  args: { game: gameSchema },
+  handler: async (ctx, { game }) => {
+    // Check if join code already exists
+    const existingGame = await ctx.db
+      .query("games")
+      .withIndex("by_joinCode", (q) => q.eq("joinCode", game.joinCode))
+      .first();
+    
+    if (existingGame) {
+      return {
+        success: false,
+        message: `Game with join code "${game.joinCode}" already exists. Use a different code or delete the existing game.`,
+      };
+    }
+
+    // Create the game
+    const gameId = await ctx.db.insert("games", {
+      joinCode: game.joinCode,
+      title: game.title,
+      description: game.description,
+      state: "lobby",
+      isArchived: false,
+      maxTeams: game.maxTeams ?? 20,
+      createdAt: Date.now(),
+    });
+
+    let totalQuestions = 0;
+
+    // Create rounds and questions
+    for (let roundIndex = 0; roundIndex < game.rounds.length; roundIndex++) {
+      const round = game.rounds[roundIndex];
+      
+      const roundId = await ctx.db.insert("rounds", {
+        gameId,
+        title: round.title,
+        roundNumber: roundIndex + 1,
+        type: round.type,
+      });
+
+      for (let qIndex = 0; qIndex < round.questions.length; qIndex++) {
+        const q = round.questions[qIndex];
+        
+        await ctx.db.insert("questions", {
+          roundId,
+          indexInRound: qIndex,
+          prompt: q.prompt,
+          type: q.type,
+          correctAnswer: q.correctAnswer,
+          acceptedAnswers: q.acceptedAnswers,
+          options: q.options,
+          mediaUrl: q.mediaUrl,
+          mediaType: q.mediaType,
+          answerFields: q.answerFields,
+          points: q.points,
+        });
+        
+        totalQuestions++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Game "${game.title}" imported successfully!`,
+      data: {
+        gameId,
+        joinCode: game.joinCode,
+        rounds: game.rounds.length,
+        questions: totalQuestions,
+      },
+    };
+  },
+});
 
 export const seedDatabase = mutation({
   args: {},

@@ -16,6 +16,8 @@
     "seed:clear:prod": "npx convex run seed:clearDatabase --prod",
     "db:reset": "npm run seed:clear && npm run seed",
     "db:reset:prod": "node scripts/reset-prod.js",
+    "import-game": "node scripts/import-game.js",
+    "import-game:prod": "node scripts/import-game.js --prod",
     "deploy": "npx convex deploy --yes && git push",
     "deploy:convex": "npx convex deploy --yes",
     "test:e2e": "playwright test",

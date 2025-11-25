@@ -1,0 +1,121 @@
+{
+  "$comment": "This example demonstrates ALL question types and features. See GAME_SCHEMA.json for the full specification.",
+  "joinCode": "DEMO1",
+  "title": "Complete Feature Demo",
+  "description": "Demonstrates all question types and round types available in the trivia app.",
+  "maxTeams": 20,
+  "rounds": [
+    {
+      "title": "Round 1 - Text Questions",
+      "type": "standard",
+      "questions": [
+        {
+          "prompt": "What is the capital of France?",
+          "type": "text",
+          "correctAnswer": "Paris",
+          "points": 10
+        },
+        {
+          "prompt": "Who painted the Mona Lisa?",
+          "type": "text",
+          "correctAnswer": "Leonardo da Vinci",
+          "acceptedAnswers": ["Da Vinci", "Leonardo", "da Vinci", "Leonardo Da Vinci"],
+          "points": 10
+        }
+      ]
+    },
+    {
+      "title": "Round 2 - Multiple Choice",
+      "type": "standard",
+      "questions": [
+        {
+          "prompt": "Which planet is known as the Red Planet?",
+          "type": "multiple_choice",
+          "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+          "correctAnswer": "Mars",
+          "points": 10
+        },
+        {
+          "prompt": "True or False: The Great Wall of China is visible from space.",
+          "type": "multiple_choice",
+          "options": ["True", "False"],
+          "correctAnswer": "False",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "title": "Round 3 - Numeric Questions",
+      "type": "standard",
+      "questions": [
+        {
+          "prompt": "How many continents are there?",
+          "type": "numeric",
+          "correctAnswer": "7",
+          "points": 10
+        },
+        {
+          "prompt": "In what year did World War II end?",
+          "type": "numeric",
+          "correctAnswer": "1945",
+          "points": 15
+        }
+      ]
+    },
+    {
+      "title": "Round 4 - Music Listening",
+      "type": "listening",
+      "questions": [
+        {
+          "prompt": "Name the artist and song:",
+          "type": "media",
+          "mediaUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+          "mediaType": "youtube",
+          "correctAnswer": "Rick Astley - Never Gonna Give You Up",
+          "answerFields": [
+            { "id": "artist", "label": "Artist", "correctAnswer": "Rick Astley", "acceptedAnswers": ["Astley", "R. Astley"] },
+            { "id": "song", "label": "Song Title", "correctAnswer": "Never Gonna Give You Up", "acceptedAnswers": ["Never Gonna Give You Up"] }
+          ],
+          "points": 20
+        },
+        {
+          "prompt": "Name the composer and piece:",
+          "type": "media",
+          "mediaUrl": "https://www.youtube.com/embed/JTc1mDieQI8",
+          "mediaType": "youtube",
+          "correctAnswer": "Johann Sebastian Bach - Toccata and Fugue in D minor",
+          "answerFields": [
+            { "id": "composer", "label": "Composer", "correctAnswer": "Johann Sebastian Bach", "acceptedAnswers": ["Bach", "J.S. Bach", "JS Bach"] },
+            { "id": "piece", "label": "Piece Name", "correctAnswer": "Toccata and Fugue in D minor", "acceptedAnswers": ["Toccata and Fugue", "Toccata"] }
+          ],
+          "points": 20
+        }
+      ]
+    },
+    {
+      "title": "Round 5 - Picture Round",
+      "type": "media",
+      "questions": [
+        {
+          "prompt": "What famous landmark is shown in this image?",
+          "type": "media",
+          "mediaUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg",
+          "mediaType": "image",
+          "correctAnswer": "Eiffel Tower",
+          "acceptedAnswers": ["The Eiffel Tower", "Tour Eiffel"],
+          "points": 10
+        },
+        {
+          "prompt": "Identify this movie from the screenshot:",
+          "type": "media",
+          "mediaUrl": "https://example.com/movie-screenshot.jpg",
+          "mediaType": "image",
+          "correctAnswer": "The Godfather",
+          "acceptedAnswers": ["Godfather", "The Godfather Part 1"],
+          "points": 15
+        }
+      ]
+    }
+  ]
+}
+

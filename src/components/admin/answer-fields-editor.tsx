@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, ChevronDown, ChevronRight } from "lucide-react";
 
 interface AnswerField {
   id: string;
   label: string;
   correctAnswer: string;
+  acceptedAnswers?: string[];
 }
 
 interface AnswerFieldsEditorProps {
@@ -19,6 +21,9 @@ export function AnswerFieldsEditor({
   fields,
   onChange,
 }: AnswerFieldsEditorProps) {
+  const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
+  const [newAcceptedInputs, setNewAcceptedInputs] = useState<Record<string, string>>({});
+
   const handleFieldChange = (
     id: string,
     key: "label" | "correctAnswer",
@@ -32,7 +37,7 @@ export function AnswerFieldsEditor({
   const handleAddField = () => {
     onChange([
       ...fields,
-      { id: crypto.randomUUID(), label: "", correctAnswer: "" },
+      { id: crypto.randomUUID(), label: "", correctAnswer: "", acceptedAnswers: [] },
     ]);
   };
 
@@ -40,6 +45,43 @@ export function AnswerFieldsEditor({
     if (fields.length > 1) {
       onChange(fields.filter((f) => f.id !== id));
     }
+  };
+
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedFields);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedFields(newExpanded);
+  };
+
+  const handleAddAcceptedAnswer = (fieldId: string) => {
+    const newAnswer = newAcceptedInputs[fieldId]?.trim();
+    if (!newAnswer) return;
+
+    onChange(
+      fields.map((f) => {
+        if (f.id !== fieldId) return f;
+        const existing = f.acceptedAnswers ?? [];
+        if (existing.includes(newAnswer)) return f;
+        return { ...f, acceptedAnswers: [...existing, newAnswer] };
+      })
+    );
+    setNewAcceptedInputs((prev) => ({ ...prev, [fieldId]: "" }));
+  };
+
+  const handleRemoveAcceptedAnswer = (fieldId: string, index: number) => {
+    onChange(
+      fields.map((f) => {
+        if (f.id !== fieldId) return f;
+        return {
+          ...f,
+          acceptedAnswers: (f.acceptedAnswers ?? []).filter((_, i) => i !== index),
+        };
+      })
+    );
   };
 
   return (
@@ -80,6 +122,72 @@ export function AnswerFieldsEditor({
             placeholder="Correct answer"
             className="bg-slate-900 border-slate-700 text-white text-sm"
           />
+
+          {/* Accepted Answers Section */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => toggleExpanded(field.id)}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+            >
+              {expandedFields.has(field.id) ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+              Also Accept ({field.acceptedAnswers?.length ?? 0})
+            </button>
+
+            {expandedFields.has(field.id) && (
+              <div className="mt-2 pl-4 space-y-2">
+                {(field.acceptedAnswers ?? []).map((answer, answerIndex) => (
+                  <div
+                    key={answerIndex}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <span className="flex-1 text-slate-400 truncate">{answer}</span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleRemoveAcceptedAnswer(field.id, answerIndex)}
+                      className="h-5 w-5 text-slate-600 hover:text-red-400"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input
+                    value={newAcceptedInputs[field.id] ?? ""}
+                    onChange={(e) =>
+                      setNewAcceptedInputs((prev) => ({
+                        ...prev,
+                        [field.id]: e.target.value,
+                      }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddAcceptedAnswer(field.id);
+                      }
+                    }}
+                    placeholder="Add alternate answer..."
+                    className="bg-slate-900 border-slate-700 text-white text-xs h-7 flex-1"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={() => handleAddAcceptedAnswer(field.id)}
+                    disabled={!newAcceptedInputs[field.id]?.trim()}
+                    className="h-7 w-7 bg-slate-700 hover:bg-slate-600 text-white"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       ))}
 
@@ -100,4 +208,3 @@ export function AnswerFieldsEditor({
     </div>
   );
 }
-

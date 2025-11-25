@@ -20,6 +20,7 @@ interface AnswerField {
   id: string;
   label: string;
   correctAnswer: string;
+  acceptedAnswers?: string[];
 }
 
 interface QuestionEditorPanelProps {

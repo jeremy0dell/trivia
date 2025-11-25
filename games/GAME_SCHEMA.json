@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "trivia-game-import-schema",
+  "title": "Trivia Game Import Schema",
+  "description": "Complete JSON Schema for importing trivia games. Use this schema to generate valid game JSON files for the trivia app.",
+  "type": "object",
+  "required": ["joinCode", "title", "rounds"],
+  "additionalProperties": false,
+  "properties": {
+    "joinCode": {
+      "type": "string",
+      "description": "Unique code players use to join the game. Should be short, uppercase, alphanumeric (e.g., 'TRIVIA1', 'MUSIC2'). Must be unique across all games.",
+      "pattern": "^[A-Z0-9]+$",
+      "minLength": 1,
+      "maxLength": 10,
+      "examples": ["TRIVIA1", "MUSIC2", "PUB42"]
+    },
+    "title": {
+      "type": "string",
+      "description": "Display title of the game shown to hosts and players.",
+      "minLength": 1,
+      "examples": ["Tuesday Night Trivia", "Music Pub Quiz", "Movie Madness"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional longer description of the game.",
+      "examples": ["Test your knowledge of 80s movies and music!"]
+    },
+    "maxTeams": {
+      "type": "integer",
+      "description": "Maximum number of teams that can join. Defaults to 20 if not specified.",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 20
+    },
+    "rounds": {
+      "type": "array",
+      "description": "Array of rounds in the game. Must have at least one round. Rounds are played in array order.",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/round"
+      }
+    }
+  },
+  "$defs": {
+    "round": {
+      "type": "object",
+      "description": "A round contains a group of related questions.",
+      "required": ["title", "type", "questions"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Display title of the round.",
+          "minLength": 1,
+          "examples": ["Round 1 - General Knowledge", "Picture Round", "Music Clips"]
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of round. 'standard' for text/multiple choice, 'listening' for audio/video content, 'media' for images/mixed media.",
+          "enum": ["standard", "listening", "media"]
+        },
+        "questions": {
+          "type": "array",
+          "description": "Array of questions in this round. Questions are presented in array order.",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/question"
+          }
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "description": "A single question. The required fields depend on the question type.",
+      "required": ["prompt", "type", "correctAnswer", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "The question text shown to players.",
+          "minLength": 1,
+          "examples": [
+            "What is the capital of France?",
+            "Name the artist and song title:",
+            "How many planets are in our solar system?"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "description": "Question type. 'text' = free text answer, 'multiple_choice' = select from options, 'numeric' = number answer, 'media' = question with embedded media.",
+          "enum": ["text", "multiple_choice", "numeric", "media"]
+        },
+        "correctAnswer": {
+          "type": "string",
+          "description": "The correct answer. For numeric questions, provide as string (e.g., '42'). For multi-field questions, this is the combined/display answer.",
+          "minLength": 1,
+          "examples": ["Paris", "42", "The Beatles - Hey Jude"]
+        },
+        "acceptedAnswers": {
+          "type": "array",
+          "description": "Optional array of alternative accepted answers. Case-insensitive matching. Use for common misspellings, abbreviations, or alternate phrasings.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            ["paris", "Paris, France"],
+            ["Beethoven", "L. van Beethoven", "Ludwig Beethoven"],
+            ["7", "seven", "Seven"]
+          ]
+        },
+        "options": {
+          "type": "array",
+          "description": "REQUIRED for 'multiple_choice' type. Array of answer options. The correctAnswer must exactly match one of these options.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 2,
+          "maxItems": 6,
+          "examples": [
+            ["Option A", "Option B", "Option C", "Option D"],
+            ["True", "False"],
+            ["Red", "Blue", "Green", "Yellow", "Purple", "Orange"]
+          ]
+        },
+        "mediaUrl": {
+          "type": "string",
+          "description": "REQUIRED for 'media' type questions. URL of the media content. For YouTube, use embed format: 'https://www.youtube.com/embed/VIDEO_ID'",
+          "format": "uri",
+          "examples": [
+            "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            "https://example.com/images/question1.jpg",
+            "https://example.com/audio/clip1.mp3"
+          ]
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "REQUIRED when mediaUrl is provided. Type of media content.",
+          "enum": ["youtube", "image", "video", "audio"]
+        },
+        "answerFields": {
+          "type": "array",
+          "description": "Optional. For questions requiring multiple separate answers (e.g., 'Name the artist AND song'). Each field gets its own input box and is graded separately. Each field can have its own acceptedAnswers.",
+          "items": {
+            "$ref": "#/$defs/answerField"
+          },
+          "minItems": 1,
+          "examples": [
+            [
+              {"id": "artist", "label": "Artist", "correctAnswer": "The Beatles", "acceptedAnswers": ["Beatles"]},
+              {"id": "song", "label": "Song Title", "correctAnswer": "Hey Jude"}
+            ],
+            [
+              {"id": "composer", "label": "Composer", "correctAnswer": "Johann Sebastian Bach", "acceptedAnswers": ["Bach", "J.S. Bach", "JS Bach"]},
+              {"id": "piece", "label": "Piece", "correctAnswer": "Toccata and Fugue in D minor", "acceptedAnswers": ["Toccata and Fugue", "Toccata"]}
+            ]
+          ]
+        },
+        "points": {
+          "type": "integer",
+          "description": "Points awarded for a correct answer. Typically 10 for standard, 15 for harder, 20 for bonus/media questions.",
+          "minimum": 1,
+          "maximum": 100,
+          "examples": [10, 15, 20, 25]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "multiple_choice" } }
+          },
+          "then": {
+            "required": ["options"],
+            "properties": {
+              "options": {
+                "minItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "media" } }
+          },
+          "then": {
+            "required": ["mediaUrl", "mediaType"]
+          }
+        }
+      ]
+    },
+    "answerField": {
+      "type": "object",
+      "description": "A single answer field for multi-part questions.",
+      "required": ["id", "label", "correctAnswer"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this field within the question. Use lowercase, no spaces (e.g., 'artist', 'song', 'year').",
+          "pattern": "^[a-z_][a-z0-9_]*$",
+          "examples": ["artist", "song", "composer", "title", "year"]
+        },
+        "label": {
+          "type": "string",
+          "description": "Display label shown to players for this input field.",
+          "minLength": 1,
+          "examples": ["Artist", "Song Title", "Composer", "Year"]
+        },
+        "correctAnswer": {
+          "type": "string",
+          "description": "The correct answer for this specific field.",
+          "minLength": 1,
+          "examples": ["The Beatles", "Hey Jude", "1968"]
+        },
+        "acceptedAnswers": {
+          "type": "array",
+          "description": "Optional array of alternative accepted answers for this specific field. Case-insensitive matching.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            ["Bach", "J.S. Bach", "JS Bach"],
+            ["Toccata", "Toccata and Fugue"]
+          ]
+        }
+      }
+    }
+  }
+}
+

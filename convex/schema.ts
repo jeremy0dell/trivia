@@ -32,6 +32,7 @@ export const answerField = v.object({
   id: v.string(),
   label: v.string(),
   correctAnswer: v.string(),
+  acceptedAnswers: v.optional(v.array(v.string())),
 });
 
 export default defineSchema({

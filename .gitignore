@@ -40,6 +40,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# game data (except schema and examples)
+/games/*
+!/games/GAME_SCHEMA.json
+!/games/example-game.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

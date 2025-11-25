@@ -100,7 +100,12 @@ export const autoGradeQuestion = mutation({
 
         for (const field of fields) {
           const submittedValue = answer.answers[field.id] ?? "";
-          const result = gradeTextField(submittedValue, field.correctAnswer, pointsPerField);
+          const result = gradeTextFieldWithAccepted(
+            submittedValue,
+            field.correctAnswer,
+            field.acceptedAnswers,
+            pointsPerField
+          );
           totalScore += result.score;
           if (result.needsReview) anyNeedsReview = true;
         }
