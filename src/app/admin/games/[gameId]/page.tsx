@@ -20,6 +20,7 @@ import {
 import { DeleteDialog } from "@/components/admin/delete-dialog";
 import { RoundList } from "@/components/admin/round-list";
 import { QuestionEditorPanel } from "@/components/admin/question-editor-panel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PageProps = {
   params: Promise<{ gameId: string }>;
@@ -115,9 +116,33 @@ export default function GameEditorPage({ params }: PageProps) {
   if (!game) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-48 bg-slate-700 rounded" />
-          <div className="h-4 w-96 bg-slate-700 rounded" />
+        <Skeleton className="h-9 w-32 bg-slate-700 mb-6" />
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-64 bg-slate-700" />
+            <Skeleton className="h-5 w-96 bg-slate-700" />
+            <div className="flex gap-2 mt-2">
+              <Skeleton className="h-6 w-20 bg-slate-700" />
+              <Skeleton className="h-6 w-20 bg-slate-700" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-24 bg-slate-700" />
+            {[1, 2].map((i) => (
+              <div key={i} className="rounded-lg border border-slate-700 p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-5 w-5 bg-slate-700" />
+                  <Skeleton className="h-5 flex-1 max-w-xs bg-slate-700" />
+                  <Skeleton className="h-5 w-16 bg-slate-700" />
+                </div>
+                <div className="space-y-2 pl-8">
+                  {[1, 2, 3].map((j) => (
+                    <Skeleton key={j} className="h-12 w-full bg-slate-700/50" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

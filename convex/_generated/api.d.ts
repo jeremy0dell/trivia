@@ -13,6 +13,7 @@ import type * as games from "../games.js";
 import type * as questions from "../questions.js";
 import type * as rounds from "../rounds.js";
 import type * as scoring from "../scoring.js";
+import type * as seed from "../seed.js";
 import type * as teams from "../teams.js";
 
 import type {
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   questions: typeof questions;
   rounds: typeof rounds;
   scoring: typeof scoring;
+  seed: typeof seed;
   teams: typeof teams;
 }>;
 

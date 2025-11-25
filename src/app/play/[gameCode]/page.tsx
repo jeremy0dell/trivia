@@ -10,6 +10,7 @@ import { MultipleChoice } from "@/components/game/multiple-choice";
 import { MultiAnswerInput } from "@/components/game/multi-answer-input";
 import { SubmissionStatus } from "@/components/game/submission-status";
 import { WaitingScreen } from "@/components/game/waiting-screen";
+import { DevAnswerHint } from "@/components/game/dev-answer-hint";
 import { LoadingScreen } from "@/components/shared/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Medal, Award } from "lucide-react";
@@ -140,6 +141,11 @@ export default function PlayerGamePage({ params }: PageProps) {
     <PlayerLayout teamName={team.name} score={team.totalScore}>
       <div className="space-y-6">
         <QuestionDisplay question={currentQuestion} />
+
+        <DevAnswerHint
+          correctAnswer={currentQuestion.correctAnswer}
+          acceptedAnswers={currentQuestion.acceptedAnswers}
+        />
 
         {hasSubmitted ? (
           <SubmissionStatus

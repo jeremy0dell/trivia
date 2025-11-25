@@ -43,6 +43,33 @@ function gradeTextField(submitted: string, correct: string, points: number): { s
   }
 }
 
+function gradeTextFieldWithAccepted(
+  submitted: string,
+  correctAnswer: string,
+  acceptedAnswers: string[] | undefined,
+  points: number
+): { score: number; needsReview: boolean } {
+  const allAccepted = [correctAnswer, ...(acceptedAnswers ?? [])];
+
+  let bestResult = { score: 0, needsReview: false };
+  let highestSimilarity = 0;
+
+  for (const accepted of allAccepted) {
+    const similarity = calculateSimilarity(submitted, accepted);
+
+    if (similarity > highestSimilarity) {
+      highestSimilarity = similarity;
+      bestResult = gradeTextField(submitted, accepted, points);
+    }
+
+    if (similarity >= 0.95) {
+      return { score: points, needsReview: false };
+    }
+  }
+
+  return bestResult;
+}
+
 export const autoGradeQuestion = mutation({
   args: { questionId: v.id("questions") },
   handler: async (ctx, args) => {
@@ -95,7 +122,12 @@ export const autoGradeQuestion = mutation({
           needsReview = false;
         }
       } else {
-        const result = gradeTextField(answer.rawAnswer, correctAnswer, question.points);
+        const result = gradeTextFieldWithAccepted(
+          answer.rawAnswer,
+          correctAnswer,
+          question.acceptedAnswers,
+          question.points
+        );
         autoScore = result.score;
         needsReview = result.needsReview;
       }

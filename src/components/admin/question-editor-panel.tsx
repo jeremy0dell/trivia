@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
 import { OptionsEditor } from "./options-editor";
 import { AnswerFieldsEditor } from "./answer-fields-editor";
+import { AcceptedAnswersEditor } from "./accepted-answers-editor";
 import { MediaPreview } from "./media-preview";
 
 type QuestionType = "text" | "multiple_choice" | "numeric" | "media";
@@ -38,6 +39,7 @@ export function QuestionEditorPanel({
   const [type, setType] = useState<QuestionType>("text");
   const [points, setPoints] = useState(10);
   const [correctAnswer, setCorrectAnswer] = useState("");
+  const [acceptedAnswers, setAcceptedAnswers] = useState<string[]>([]);
   const [options, setOptions] = useState<string[]>([]);
   const [answerFields, setAnswerFields] = useState<AnswerField[]>([]);
   const [mediaUrl, setMediaUrl] = useState("");
@@ -66,6 +68,7 @@ export function QuestionEditorPanel({
       setType(existingQuestion.type);
       setPoints(existingQuestion.points);
       setCorrectAnswer(existingQuestion.correctAnswer);
+      setAcceptedAnswers(existingQuestion.acceptedAnswers ?? []);
       setOptions(existingQuestion.options ?? []);
       setAnswerFields(existingQuestion.answerFields ?? []);
       setMediaUrl(existingQuestion.mediaUrl ?? "");
@@ -75,6 +78,7 @@ export function QuestionEditorPanel({
       setType("text");
       setPoints(10);
       setCorrectAnswer("");
+      setAcceptedAnswers([]);
       setOptions(["", ""]);
       setAnswerFields([]);
       setMediaUrl("");
@@ -144,6 +148,10 @@ export function QuestionEditorPanel({
         points,
         correctAnswer:
           answerFields.length > 0 ? answerFields[0]?.correctAnswer ?? "" : correctAnswer,
+        acceptedAnswers:
+          type !== "multiple_choice" && acceptedAnswers.length > 0
+            ? acceptedAnswers
+            : undefined,
         options: validOptions,
         answerFields: answerFields.length > 0 ? answerFields : undefined,
         mediaUrl: mediaUrl || undefined,
@@ -313,6 +321,17 @@ export function QuestionEditorPanel({
                 {errors.correctAnswer && (
                   <p className="text-red-400 text-sm">{errors.correctAnswer}</p>
                 )}
+
+                {/* Accepted Answers for text/numeric */}
+                <div className="mt-4 pt-4 border-t border-slate-700">
+                  <Label className="text-slate-300 mb-2 block">
+                    Also Accept (Optional)
+                  </Label>
+                  <AcceptedAnswersEditor
+                    answers={acceptedAnswers}
+                    onChange={setAcceptedAnswers}
+                  />
+                </div>
               </>
             ) : null}
           </div>

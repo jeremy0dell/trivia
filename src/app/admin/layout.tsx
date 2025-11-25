@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Lock } from "lucide-react";
+import { getAdminPassword } from "@/lib/env";
+import { isDevMode } from "@/lib/dev";
 
 const COOKIE_NAME = "admin_authenticated";
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+const ADMIN_PASSWORD = getAdminPassword();
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -69,7 +72,9 @@ export default function AdminLayout({
   };
 
   // Use the synced value or local state (local state takes precedence after login/logout)
-  const effectiveAuth = isAuthenticated || isAuthenticatedFromCookie;
+  // In dev mode (localhost), bypass authentication entirely
+  const devMode = isDevMode();
+  const effectiveAuth = devMode || isAuthenticated || isAuthenticatedFromCookie;
 
   if (!effectiveAuth) {
     return (
@@ -123,14 +128,21 @@ export default function AdminLayout({
               <span className="text-white font-semibold text-lg">
                 Trivia Admin
               </span>
+              {devMode && (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  DEV MODE
+                </Badge>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              onClick={handleLogout}
-              className="text-slate-400 hover:text-white hover:bg-slate-700"
-            >
-              Logout
-            </Button>
+            {!devMode && (
+              <Button
+                variant="ghost"
+                onClick={handleLogout}
+                className="text-slate-400 hover:text-white hover:bg-slate-700"
+              >
+                Logout
+              </Button>
+            )}
           </div>
         </div>
       </header>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Music, Users, Sparkles } from "lucide-react";
+import { Music, Users, Sparkles, Settings } from "lucide-react";
 
 export default function Home() {
   return (
@@ -38,13 +38,14 @@ export default function Home() {
                 Join a Game
               </Button>
             </Link>
-            <Link href="/host/new">
+            <Link href="/admin">
               <Button
                 size="lg"
                 variant="outline"
                 className="w-full sm:w-auto text-lg px-8"
               >
-                Host a Game
+                <Settings className="w-5 h-5 mr-2" />
+                Admin
               </Button>
             </Link>
           </div>

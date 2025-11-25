@@ -69,6 +69,7 @@ export default defineSchema({
     type: questionType,
     options: v.optional(v.array(v.string())),
     correctAnswer: v.string(),
+    acceptedAnswers: v.optional(v.array(v.string())),
     mediaUrl: v.optional(v.string()),
     mediaType: v.optional(mediaType),
     points: v.number(),

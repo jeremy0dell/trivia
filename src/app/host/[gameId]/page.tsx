@@ -10,6 +10,7 @@ import { TeamList } from "@/components/host/team-list";
 import { GradingPanel } from "@/components/host/grading-panel";
 import { GameCodeDisplay } from "@/components/shared/game-code-display";
 import { LoadingScreen } from "@/components/shared/loading-spinner";
+import { DevAnswerHint } from "@/components/game/dev-answer-hint";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Users, ClipboardCheck, ExternalLink } from "lucide-react";
 import Link from "next/link";
@@ -151,6 +152,8 @@ interface CurrentQuestionCardProps {
     prompt: string;
     type: string;
     options?: string[];
+    correctAnswer: string;
+    acceptedAnswers?: string[];
     roundTitle: string;
     roundNumber: number;
     questionNumber: number;
@@ -185,6 +188,10 @@ function CurrentQuestionCard({ question }: CurrentQuestionCardProps) {
       <Badge variant="secondary" className="text-xs">
         {question.type.replace("_", " ")}
       </Badge>
+      <DevAnswerHint
+        correctAnswer={question.correctAnswer}
+        acceptedAnswers={question.acceptedAnswers}
+      />
     </div>
   );
 }
