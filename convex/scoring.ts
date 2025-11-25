@@ -221,3 +221,117 @@ export const getNeedsReview = query({
   },
 });
 
+export const getRoundScores = query({
+  args: { gameId: v.id("games"), roundId: v.id("rounds") },
+  handler: async (ctx, args) => {
+    const teams = await ctx.db
+      .query("teams")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+
+    const questions = await ctx.db
+      .query("questions")
+      .withIndex("by_roundId", (q) => q.eq("roundId", args.roundId))
+      .collect();
+
+    const questionIds = new Set(questions.map((q) => q._id));
+
+    const teamScores = await Promise.all(
+      teams.map(async (team) => {
+        const teamAnswers = await ctx.db
+          .query("answers")
+          .withIndex("by_teamId", (q) => q.eq("teamId", team._id))
+          .collect();
+
+        const roundAnswers = teamAnswers.filter((a) => questionIds.has(a.questionId));
+        const roundScore = roundAnswers.reduce((sum, a) => sum + (a.finalScore ?? 0), 0);
+
+        return {
+          teamId: team._id,
+          teamName: team.name,
+          roundScore,
+          totalScore: team.totalScore,
+        };
+      })
+    );
+
+    return teamScores.sort((a, b) => b.totalScore - a.totalScore);
+  },
+});
+
+export const getCompletedRoundSummary = query({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game || !game.currentRoundId) {
+      return null;
+    }
+
+    const currentRound = await ctx.db.get(game.currentRoundId);
+    if (!currentRound) {
+      return null;
+    }
+
+    const rounds = await ctx.db
+      .query("rounds")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+
+    const sortedRounds = rounds.sort((a, b) => a.roundNumber - b.roundNumber);
+    const currentRoundIndex = sortedRounds.findIndex((r) => r._id === game.currentRoundId);
+    const nextRound = sortedRounds[currentRoundIndex + 1] ?? null;
+
+    const teams = await ctx.db
+      .query("teams")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+
+    const questions = await ctx.db
+      .query("questions")
+      .withIndex("by_roundId", (q) => q.eq("roundId", game.currentRoundId!))
+      .collect();
+
+    const questionIds = new Set(questions.map((q) => q._id));
+
+    const teamScores = await Promise.all(
+      teams.map(async (team) => {
+        const teamAnswers = await ctx.db
+          .query("answers")
+          .withIndex("by_teamId", (q) => q.eq("teamId", team._id))
+          .collect();
+
+        const roundAnswers = teamAnswers.filter((a) => questionIds.has(a.questionId));
+        const roundScore = roundAnswers.reduce((sum, a) => sum + (a.finalScore ?? 0), 0);
+
+        return {
+          teamId: team._id,
+          teamName: team.name,
+          roundScore,
+          totalScore: team.totalScore,
+        };
+      })
+    );
+
+    const sortedTeamScores = teamScores.sort((a, b) => b.totalScore - a.totalScore);
+    const topScorerThisRound = [...teamScores].sort((a, b) => b.roundScore - a.roundScore)[0];
+
+    return {
+      currentRound: {
+        _id: currentRound._id,
+        title: currentRound.title,
+        roundNumber: currentRound.roundNumber,
+      },
+      nextRound: nextRound
+        ? {
+            _id: nextRound._id,
+            title: nextRound.title,
+            roundNumber: nextRound.roundNumber,
+          }
+        : null,
+      teamScores: sortedTeamScores,
+      topScorerThisRound: topScorerThisRound?.roundScore > 0 ? topScorerThisRound : null,
+      totalRounds: sortedRounds.length,
+    };
+  },
+});
+

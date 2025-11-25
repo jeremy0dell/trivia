@@ -16,10 +16,11 @@ import {
   Unlock,
   Trash2,
   Users,
+  Clock,
 } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-type GameState = "lobby" | "in_round" | "grading" | "finished";
+type GameState = "lobby" | "in_round" | "grading" | "between_rounds" | "finished";
 
 interface HostControlsProps {
   gameId: Id<"games">;
@@ -47,11 +48,13 @@ export function HostControls({
   const updateState = useMutation(api.games.updateState);
   const startRound = useMutation(api.games.startRound);
   const advanceQuestion = useMutation(api.games.advanceQuestion);
-  const advanceRound = useMutation(api.games.advanceRound);
+  const goToBetweenRounds = useMutation(api.games.goToBetweenRounds);
+  const startNextRound = useMutation(api.games.startNextRound);
   const autoGrade = useMutation(api.scoring.autoGradeQuestion);
   const finalizeQuestion = useMutation(api.scoring.finalizeQuestion);
   const toggleLobbyLock = useMutation(api.games.toggleLobbyLock);
   const clearAllTeams = useMutation(api.teams.clearAllTeams);
+  const endGame = useMutation(api.games.endGame);
 
   const currentRound = rounds.find((r) => r._id === currentRoundId);
   const isLastQuestion =
@@ -89,18 +92,19 @@ export function HostControls({
     await finalizeQuestion({ questionId });
 
     if (isLastQuestion) {
-      if (isLastRound) {
-        await updateState({ gameId, state: "finished" });
-      } else {
-        await advanceRound({ gameId });
-      }
+      // Go to between_rounds (or finished if it's the last round)
+      await goToBetweenRounds({ gameId });
     } else {
       await advanceQuestion({ gameId });
     }
   };
 
+  const handleStartNextRound = async () => {
+    await startNextRound({ gameId });
+  };
+
   const handleEndGame = async () => {
-    await updateState({ gameId, state: "finished" });
+    await endGame({ gameId });
   };
 
   return (
@@ -202,6 +206,17 @@ export function HostControls({
           />
         )}
 
+        {gameState === "between_rounds" && currentRoundId && (
+          <BetweenRoundsControls
+            gameId={gameId}
+            currentRoundId={currentRoundId}
+            rounds={rounds}
+            isLastRound={isLastRound}
+            onStartNextRound={handleStartNextRound}
+            onEndGame={handleEndGame}
+          />
+        )}
+
         {gameState === "finished" && (
           <div className="text-center space-y-3">
             <Trophy className="w-12 h-12 text-accent mx-auto" />
@@ -259,7 +274,7 @@ function GradingControls({
   const nextLabel = isLastQuestion
     ? isLastRound
       ? "Finish Game"
-      : "Next Round"
+      : "Round Break"
     : "Next Question";
 
   return (
@@ -281,12 +296,102 @@ function GradingControls({
       >
         {isLastQuestion && isLastRound ? (
           <Trophy className="w-4 h-4 mr-2" />
+        ) : isLastQuestion ? (
+          <Clock className="w-4 h-4 mr-2" />
         ) : (
           <SkipForward className="w-4 h-4 mr-2" />
         )}
         Finalize & {nextLabel}
-        {!isLastQuestion && !isLastRound && <ChevronRight className="w-4 h-4 ml-1" />}
+        {!isLastQuestion && <ChevronRight className="w-4 h-4 ml-1" />}
       </Button>
+    </div>
+  );
+}
+
+interface BetweenRoundsControlsProps {
+  gameId: Id<"games">;
+  currentRoundId: Id<"rounds">;
+  rounds: Array<{ _id: Id<"rounds">; title: string; roundNumber: number }>;
+  isLastRound: boolean;
+  onStartNextRound: () => Promise<void>;
+  onEndGame: () => Promise<void>;
+}
+
+function BetweenRoundsControls({
+  gameId,
+  currentRoundId,
+  rounds,
+  isLastRound,
+  onStartNextRound,
+  onEndGame,
+}: BetweenRoundsControlsProps) {
+  const roundSummary = useQuery(api.scoring.getCompletedRoundSummary, {
+    gameId,
+  });
+
+  const currentRound = rounds.find((r) => r._id === currentRoundId);
+  const currentRoundIndex = rounds.findIndex((r) => r._id === currentRoundId);
+  const nextRound = !isLastRound ? rounds[currentRoundIndex + 1] : null;
+
+  if (!roundSummary) {
+    return <p className="text-sm text-muted-foreground">Loading round summary...</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Round Complete Header */}
+      <div className="bg-accent/10 rounded-lg p-4 text-center">
+        <h3 className="text-lg font-bold text-accent">Round {currentRound?.roundNumber} Complete</h3>
+        <p className="text-sm text-muted-foreground">{currentRound?.title}</p>
+      </div>
+
+      {/* Round Scores */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-muted-foreground">Round Scores</h4>
+        <div className="space-y-1 max-h-48 overflow-y-auto">
+          {roundSummary.teamScores.map((team, index) => (
+            <div
+              key={team.teamId}
+              className="flex items-center justify-between bg-muted/30 rounded px-3 py-2"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground w-5">
+                  {index + 1}.
+                </span>
+                <span className="text-sm font-medium">{team.teamName}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="text-green-400 border-green-400/30">
+                  +{team.roundScore}
+                </Badge>
+                <span className="text-sm font-bold">{team.totalScore}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top Scorer */}
+      {roundSummary.topScorerThisRound && (
+        <div className="text-center text-sm text-muted-foreground">
+          <Trophy className="w-4 h-4 inline mr-1 text-yellow-500" />
+          Top scorer: <span className="font-medium">{roundSummary.topScorerThisRound.teamName}</span>
+          {" "}with {roundSummary.topScorerThisRound.roundScore} pts
+        </div>
+      )}
+
+      {/* Actions */}
+      {isLastRound ? (
+        <Button className="w-full" size="lg" onClick={onEndGame}>
+          <Trophy className="w-4 h-4 mr-2" />
+          End Game & Show Results
+        </Button>
+      ) : (
+        <Button className="w-full" size="lg" onClick={onStartNextRound}>
+          <Play className="w-4 h-4 mr-2" />
+          Start Round {nextRound?.roundNumber} - {nextRound?.title}
+        </Button>
+      )}
     </div>
   );
 }

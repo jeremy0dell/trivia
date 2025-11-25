@@ -11,6 +11,7 @@ import { MultiAnswerInput } from "@/components/game/multi-answer-input";
 import { SubmissionStatus } from "@/components/game/submission-status";
 import { WaitingScreen } from "@/components/game/waiting-screen";
 import { DevAnswerHint } from "@/components/game/dev-answer-hint";
+import { BetweenRoundsPlayerView } from "@/components/game/between-rounds-player-view";
 import { LoadingScreen } from "@/components/shared/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Medal, Award } from "lucide-react";
@@ -110,6 +111,14 @@ export default function PlayerGamePage({ params }: PageProps) {
     return (
       <PlayerLayout teamName={team.name} score={team.totalScore}>
         <WaitingScreen state="grading" />
+      </PlayerLayout>
+    );
+  }
+
+  if (gameState.state === "between_rounds") {
+    return (
+      <PlayerLayout teamName={team.name} score={team.totalScore}>
+        <BetweenRoundsPlayerView gameId={game._id} team={team} />
       </PlayerLayout>
     );
   }

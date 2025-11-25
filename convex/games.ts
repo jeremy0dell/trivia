@@ -185,6 +185,81 @@ export const advanceRound = mutation({
   },
 });
 
+export const goToBetweenRounds = mutation({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) return { success: false, reason: "no_game" };
+
+    const rounds = await ctx.db
+      .query("rounds")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+
+    const sortedRounds = rounds.sort((a, b) => a.roundNumber - b.roundNumber);
+    const currentRoundIndex = sortedRounds.findIndex(
+      (r) => r._id === game.currentRoundId
+    );
+
+    const hasMoreRounds = currentRoundIndex + 1 < sortedRounds.length;
+
+    if (hasMoreRounds) {
+      await ctx.db.patch(args.gameId, { state: "between_rounds" });
+      return { success: true, nextState: "between_rounds" };
+    } else {
+      await ctx.db.patch(args.gameId, { state: "finished" });
+      return { success: true, nextState: "finished" };
+    }
+  },
+});
+
+export const startNextRound = mutation({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) return { success: false, reason: "no_game" };
+    if (game.state !== "between_rounds") {
+      return { success: false, reason: "not_between_rounds" };
+    }
+
+    const rounds = await ctx.db
+      .query("rounds")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+
+    const sortedRounds = rounds.sort((a, b) => a.roundNumber - b.roundNumber);
+    const currentRoundIndex = sortedRounds.findIndex(
+      (r) => r._id === game.currentRoundId
+    );
+
+    const nextRoundIndex = currentRoundIndex + 1;
+
+    if (nextRoundIndex >= sortedRounds.length) {
+      await ctx.db.patch(args.gameId, { state: "finished" });
+      return { success: false, reason: "no_more_rounds" };
+    }
+
+    await ctx.db.patch(args.gameId, {
+      currentRoundId: sortedRounds[nextRoundIndex]._id,
+      currentQuestionIndex: 0,
+      state: "in_round",
+    });
+
+    return { success: true, nextRound: sortedRounds[nextRoundIndex] };
+  },
+});
+
+export const endGame = mutation({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) return { success: false, reason: "no_game" };
+
+    await ctx.db.patch(args.gameId, { state: "finished" });
+    return { success: true };
+  },
+});
+
 export const list = query({
   args: {
     includeArchived: v.optional(v.boolean()),

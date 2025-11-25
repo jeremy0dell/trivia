@@ -7,6 +7,7 @@ import { api } from "../../../../convex/_generated/api";
 import { GameStatusBanner } from "@/components/lobby/game-status-banner";
 import { Scoreboard } from "@/components/lobby/scoreboard";
 import { TeamJoinList } from "@/components/lobby/team-join-list";
+import { BetweenRoundsLobbyView } from "@/components/lobby/between-rounds-lobby-view";
 import { GameCodeDisplay } from "@/components/shared/game-code-display";
 import { LoadingScreen } from "@/components/shared/loading-spinner";
 import { Music } from "lucide-react";
@@ -67,6 +68,8 @@ export default function LobbyPage({ params }: PageProps) {
 
             {gameState.state === "lobby" ? (
               <TeamJoinList gameId={game._id} />
+            ) : gameState.state === "between_rounds" ? (
+              <BetweenRoundsLobbyView gameId={game._id} />
             ) : (
               <>
                 {currentQuestion?.mediaUrl && gameState.state === "in_round" && (

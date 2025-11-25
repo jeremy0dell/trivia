@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Users, Check, Clock, X } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-type GameState = "lobby" | "in_round" | "grading" | "finished";
+type GameState = "lobby" | "in_round" | "grading" | "between_rounds" | "finished";
 
 interface TeamListProps {
   gameId: Id<"games">;

@@ -28,7 +28,7 @@ type GameWithCounts = {
   title: string;
   description?: string;
   joinCode: string;
-  state: "lobby" | "in_round" | "grading" | "finished";
+  state: "lobby" | "in_round" | "grading" | "between_rounds" | "finished";
   isArchived: boolean;
   createdAt: number;
   roundCount: number;
@@ -53,6 +53,12 @@ function getStateBadge(state: string) {
       return (
         <Badge variant="secondary" className="bg-amber-500/20 text-amber-400">
           Grading
+        </Badge>
+      );
+    case "between_rounds":
+      return (
+        <Badge variant="secondary" className="bg-purple-500/20 text-purple-400">
+          Between Rounds
         </Badge>
       );
     case "finished":

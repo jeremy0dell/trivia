@@ -1,8 +1,8 @@
 "use client";
 
-import { Music, Clock, Trophy, Hourglass } from "lucide-react";
+import { Music, Clock, Trophy, Hourglass, Pause } from "lucide-react";
 
-type GameState = "lobby" | "in_round" | "grading" | "finished";
+type GameState = "lobby" | "in_round" | "grading" | "between_rounds" | "finished";
 
 interface GameStatusBannerProps {
   state: GameState;
@@ -11,6 +11,8 @@ interface GameStatusBannerProps {
   questionNumber?: number;
   totalQuestions?: number;
   joinCode?: string;
+  nextRoundNumber?: number;
+  nextRoundTitle?: string;
 }
 
 export function GameStatusBanner({
@@ -20,6 +22,8 @@ export function GameStatusBanner({
   questionNumber,
   totalQuestions,
   joinCode,
+  nextRoundNumber,
+  nextRoundTitle,
 }: GameStatusBannerProps) {
   const content = {
     lobby: {
@@ -42,6 +46,14 @@ export function GameStatusBanner({
       title: "Grading in Progress",
       subtitle: "Scores updating soon...",
       color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    },
+    between_rounds: {
+      icon: <Pause className="w-8 h-8" />,
+      title: `Round ${roundNumber} Complete`,
+      subtitle: nextRoundNumber
+        ? `Up next: Round ${nextRoundNumber}${nextRoundTitle ? ` - ${nextRoundTitle}` : ""}`
+        : "Final scores coming up",
+      color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
     },
     finished: {
       icon: <Trophy className="w-8 h-8" />,

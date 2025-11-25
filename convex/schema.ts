@@ -5,6 +5,7 @@ export const gameState = v.union(
   v.literal("lobby"),
   v.literal("in_round"),
   v.literal("grading"),
+  v.literal("between_rounds"),
   v.literal("finished")
 );
 
