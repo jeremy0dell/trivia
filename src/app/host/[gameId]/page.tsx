@@ -120,6 +120,9 @@ export default function HostDashboardPage({ params }: PageProps) {
                 currentQuestionIndex={gameState.currentQuestionIndex ?? null}
                 totalQuestions={currentQuestion?.totalQuestions ?? 0}
                 rounds={gameState.rounds}
+                isLobbyLocked={gameState.isLobbyLocked ?? false}
+                maxTeams={gameState.maxTeams ?? 20}
+                teamCount={teams?.length ?? 0}
               />
               {currentQuestion && (
                 <CurrentQuestionCard question={currentQuestion} />
@@ -128,11 +131,12 @@ export default function HostDashboardPage({ params }: PageProps) {
             <TeamList
               gameId={gameId}
               showSubmissionStatus={gameState.state === "in_round"}
+              gameState={gameState.state}
             />
           </TabsContent>
 
           <TabsContent value="teams">
-            <TeamList gameId={gameId} showSubmissionStatus={false} />
+            <TeamList gameId={gameId} showSubmissionStatus={false} gameState={gameState.state} />
           </TabsContent>
 
           <TabsContent value="grading">

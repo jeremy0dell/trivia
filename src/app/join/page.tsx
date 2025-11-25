@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Music, ArrowLeft, Users } from "lucide-react";
+import { Music, ArrowLeft, Users, Lock, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 export default function JoinPage() {
@@ -108,10 +108,22 @@ export default function JoinPage() {
                   autoComplete="off"
                   autoFocus
                 />
-                {gameFound && (
+                {gameFound && game.isLobbyLocked && (
+                  <p className="text-sm text-amber-600 flex items-center gap-1">
+                    <Lock className="w-4 h-4" />
+                    Lobby is closed. Ask the host to unlock it.
+                  </p>
+                )}
+                {gameFound && !game.isLobbyLocked && game.state === "lobby" && (
                   <p className="text-sm text-green-600 flex items-center gap-1">
                     <Music className="w-4 h-4" />
                     Game found! Enter your team name below.
+                  </p>
+                )}
+                {gameFound && game.state !== "lobby" && (
+                  <p className="text-sm text-amber-600 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    This game has already started.
                   </p>
                 )}
                 {gameNotFound && (
@@ -121,7 +133,7 @@ export default function JoinPage() {
                 )}
               </div>
 
-              {gameFound && (
+              {gameFound && game.state === "lobby" && !game.isLobbyLocked && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Label htmlFor="teamName">Team Name</Label>
                   <Input
@@ -147,7 +159,7 @@ export default function JoinPage() {
                 type="submit"
                 size="lg"
                 className="w-full h-12 text-lg"
-                disabled={!gameFound || !teamName.trim() || isJoining}
+                disabled={!gameFound || !teamName.trim() || isJoining || game?.isLobbyLocked || game?.state !== "lobby"}
               >
                 {isJoining ? "Joining..." : "Join Game"}
               </Button>

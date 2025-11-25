@@ -1,23 +1,30 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Check, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Check, Clock, X } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
+
+type GameState = "lobby" | "in_round" | "grading" | "finished";
 
 interface TeamListProps {
   gameId: Id<"games">;
   showSubmissionStatus?: boolean;
+  gameState?: GameState;
 }
 
-export function TeamList({ gameId, showSubmissionStatus = true }: TeamListProps) {
+export function TeamList({ gameId, showSubmissionStatus = true, gameState }: TeamListProps) {
   const teams = useQuery(api.teams.getTeamsForGame, { gameId });
   const submissionStatus = useQuery(
     api.answers.getSubmissionStatusForGame,
     showSubmissionStatus ? { gameId } : "skip"
   );
+  const deleteTeam = useMutation(api.teams.deleteTeam);
+
+  const isLobby = gameState === "lobby";
 
   if (!teams) {
     return (
@@ -99,6 +106,17 @@ export function TeamList({ gameId, showSubmissionStatus = true }: TeamListProps)
                     <Badge variant="outline" className="font-mono">
                       {team.totalScore} pts
                     </Badge>
+                    {isLobby && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                        onClick={() => deleteTeam({ teamId: team._id })}
+                        title="Remove team"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </li>
               );

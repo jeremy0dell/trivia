@@ -308,6 +308,69 @@ export const hardDelete = mutation({
   },
 });
 
+export const resetGame = mutation({
+  args: {
+    gameId: v.id("games"),
+    preserveTeams: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    // Get all rounds to find all questions
+    const rounds = await ctx.db
+      .query("rounds")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+
+    // Delete all answers for this game
+    for (const round of rounds) {
+      const questions = await ctx.db
+        .query("questions")
+        .withIndex("by_roundId", (q) => q.eq("roundId", round._id))
+        .collect();
+
+      for (const question of questions) {
+        const answers = await ctx.db
+          .query("answers")
+          .withIndex("by_questionId", (q) => q.eq("questionId", question._id))
+          .collect();
+
+        for (const answer of answers) {
+          await ctx.db.delete(answer._id);
+        }
+      }
+    }
+
+    // Handle teams based on preserveTeams flag
+    const teams = await ctx.db
+      .query("teams")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+
+    if (args.preserveTeams) {
+      // Reset team scores to 0
+      for (const team of teams) {
+        await ctx.db.patch(team._id, { totalScore: 0 });
+      }
+    } else {
+      // Delete all teams
+      for (const team of teams) {
+        await ctx.db.delete(team._id);
+      }
+    }
+
+    // Reset game state back to lobby
+    await ctx.db.patch(args.gameId, {
+      state: "lobby",
+      currentRoundId: undefined,
+      currentQuestionIndex: undefined,
+    });
+
+    return { success: true };
+  },
+});
+
 export const duplicate = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
@@ -376,6 +439,36 @@ export const duplicate = mutation({
     }
 
     return { gameId: newGameId, joinCode };
+  },
+});
+
+export const toggleLobbyLock = mutation({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+    if (game.state !== "lobby") throw new Error("Can only lock/unlock in lobby state");
+
+    const newLockState = !(game.isLobbyLocked ?? false);
+    await ctx.db.patch(args.gameId, { isLobbyLocked: newLockState });
+    return { isLobbyLocked: newLockState };
+  },
+});
+
+export const updateMaxTeams = mutation({
+  args: {
+    gameId: v.id("games"),
+    maxTeams: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    if (args.maxTeams < 1 || args.maxTeams > 100) {
+      throw new Error("Max teams must be between 1 and 100");
+    }
+
+    await ctx.db.patch(args.gameId, { maxTeams: args.maxTeams });
   },
 });
 

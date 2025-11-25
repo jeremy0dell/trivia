@@ -16,8 +16,10 @@ import {
   Check,
   X,
   ExternalLink,
+  RotateCcw,
 } from "lucide-react";
 import { DeleteDialog } from "@/components/admin/delete-dialog";
+import { ResetDialog } from "@/components/admin/reset-dialog";
 import { RoundList } from "@/components/admin/round-list";
 import { QuestionEditorPanel } from "@/components/admin/question-editor-panel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +36,7 @@ export default function GameEditorPage({ params }: PageProps) {
   const [titleValue, setTitleValue] = useState("");
   const [descriptionValue, setDescriptionValue] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState<
     Id<"questions"> | "new" | null
   >(null);
@@ -46,11 +49,16 @@ export default function GameEditorPage({ params }: PageProps) {
   const rounds = useQuery(api.rounds.getRoundsForGame, {
     gameId: gameId as Id<"games">,
   });
+  const teams = useQuery(api.teams.getTeamsForGame, {
+    gameId: gameId as Id<"games">,
+  });
 
   const updateMeta = useMutation(api.games.updateMeta);
   const archiveGame = useMutation(api.games.archive);
   const deleteGame = useMutation(api.games.hardDelete);
   const startRound = useMutation(api.games.startRound);
+  const resetGame = useMutation(api.games.resetGame);
+  const updateMaxTeams = useMutation(api.games.updateMaxTeams);
 
   const isEditable = game?.state === "lobby";
 
@@ -242,7 +250,7 @@ export default function GameEditorPage({ params }: PageProps) {
               </p>
             )}
 
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
               <Badge
                 variant="secondary"
                 className="bg-slate-700 text-slate-300 font-mono"
@@ -264,11 +272,28 @@ export default function GameEditorPage({ params }: PageProps) {
                   Locked
                 </Badge>
               )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">Max teams:</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={game.maxTeams ?? 20}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (value >= 1 && value <= 100) {
+                      updateMaxTeams({ gameId: gameId as Id<"games">, maxTeams: value });
+                    }
+                  }}
+                  className="w-16 h-7 text-xs bg-slate-800 border-slate-600 text-slate-300"
+                  disabled={!isEditable}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {isEditable && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {isEditable ? (
               <>
                 <Button
                   onClick={handleStartGame}
@@ -293,14 +318,35 @@ export default function GameEditorPage({ params }: PageProps) {
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={() => setResetDialogOpen(true)}
+                className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset Game
+              </Button>
             )}
-            <Button
-              variant="ghost"
-              onClick={() => window.open(`/host/${gameId}?code=${game.joinCode}`, "_blank")}
-              className="text-slate-400 hover:text-white hover:bg-slate-700"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </Button>
+            
+            {/* Host View Button - Dynamic based on game state */}
+            {game.state === "in_round" || game.state === "grading" ? (
+              <Button
+                onClick={() => window.open(`/host/${gameId}?code=${game.joinCode}`, "_blank")}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold animate-pulse"
+              >
+                <span className="w-2 h-2 bg-white rounded-full mr-2" />
+                LIVE - {teams?.length ?? 0} teams
+              </Button>
+            ) : (
+              <Button
+                onClick={() => window.open(`/host/${gameId}?code=${game.joinCode}`, "_blank")}
+                className="bg-cyan-600 hover:bg-cyan-700 text-white font-medium"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open Host View
+              </Button>
+            )}
           </div>
         </div>
 
@@ -320,6 +366,14 @@ export default function GameEditorPage({ params }: PageProps) {
         title="Delete Game"
         description="Are you sure you want to delete this game? This action cannot be undone."
         onConfirm={handleDelete}
+      />
+
+      <ResetDialog
+        open={resetDialogOpen}
+        onOpenChange={setResetDialogOpen}
+        onReset={async (preserveTeams) => {
+          await resetGame({ gameId: gameId as Id<"games">, preserveTeams });
+        }}
       />
 
       <QuestionEditorPanel

@@ -63,8 +63,8 @@ test.describe("Player Flow", () => {
 });
 
 test.describe("Player in Lobby", () => {
-  // Skip these tests if no seeded data - they require MUSIC1 game to exist
-  test.skip(({ browserName }) => true, "Requires seeded database with MUSIC1 game");
+  // NOTE: These tests require seeded database with MUSIC1 game
+  // Run `npm run seed` before running these tests
 
   test("can join existing game with valid code", async ({ page }) => {
     await page.goto("/join");
@@ -78,8 +78,9 @@ test.describe("Player in Lobby", () => {
       timeout: 10000,
     });
 
-    // Enter team name
-    await page.fill('input[placeholder="The Mozartians"]', "E2E Test Team");
+    // Enter unique team name to avoid conflicts
+    const uniqueTeamName = `E2E Team ${Date.now()}`;
+    await page.fill('input[placeholder="The Mozartians"]', uniqueTeamName);
     await page.click('button:has-text("Join Game")');
 
     // Should redirect to play page

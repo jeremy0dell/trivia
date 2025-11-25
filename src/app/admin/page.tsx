@@ -19,6 +19,7 @@ import {
   Layers,
 } from "lucide-react";
 import { DeleteDialog } from "@/components/admin/delete-dialog";
+import { ResetDialog } from "@/components/admin/reset-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -69,6 +70,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<"active" | "archived">("active");
   const [deleteGameId, setDeleteGameId] = useState<Id<"games"> | null>(null);
+  const [resetGameId, setResetGameId] = useState<Id<"games"> | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const games = useQuery(api.games.list, {
@@ -79,6 +81,7 @@ export default function AdminPage() {
   const restoreGame = useMutation(api.games.restore);
   const deleteGame = useMutation(api.games.hardDelete);
   const duplicateGame = useMutation(api.games.duplicate);
+  const resetGame = useMutation(api.games.resetGame);
 
   const handleCreateGame = async () => {
     setIsCreating(true);
@@ -128,13 +131,13 @@ export default function AdminPage() {
         <TabsList className="bg-slate-800 border border-slate-700">
           <TabsTrigger
             value="active"
-            className="data-[state=active]:bg-slate-700"
+            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
           >
             Active
           </TabsTrigger>
           <TabsTrigger
             value="archived"
-            className="data-[state=active]:bg-slate-700"
+            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
           >
             Archived
           </TabsTrigger>
@@ -236,6 +239,20 @@ export default function AdminPage() {
                   >
                     <Copy className="w-4 h-4" />
                   </Button>
+                  {game.state !== "lobby" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setResetGameId(game._id);
+                      }}
+                      title="Reset Game"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  )}
                   {game.isArchived ? (
                     <Button
                       variant="ghost"
@@ -245,6 +262,7 @@ export default function AdminPage() {
                         e.stopPropagation();
                         restoreGame({ gameId: game._id });
                       }}
+                      title="Restore"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </Button>
@@ -257,6 +275,7 @@ export default function AdminPage() {
                         e.stopPropagation();
                         archiveGame({ gameId: game._id });
                       }}
+                      title="Archive"
                     >
                       <Archive className="w-4 h-4" />
                     </Button>
@@ -290,6 +309,17 @@ export default function AdminPage() {
           if (deleteGameId) {
             await deleteGame({ gameId: deleteGameId });
             setDeleteGameId(null);
+          }
+        }}
+      />
+
+      <ResetDialog
+        open={resetGameId !== null}
+        onOpenChange={(open) => !open && setResetGameId(null)}
+        onReset={async (preserveTeams) => {
+          if (resetGameId) {
+            await resetGame({ gameId: resetGameId, preserveTeams });
+            setResetGameId(null);
           }
         }}
       />

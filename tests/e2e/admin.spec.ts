@@ -131,4 +131,159 @@ test.describe("Admin Game Editor", () => {
     // Question editor panel should open - title is "New Question"
     await expect(page.getByText("New Question")).toBeVisible();
   });
+
+  test("shows Open Host View button in lobby state", async ({ page }) => {
+    // In lobby state, should show "Open Host View" button
+    await expect(page.getByRole("button", { name: /open host view/i })).toBeVisible();
+  });
+});
+
+test.describe("Game Reset Feature", () => {
+  test("reset dialog shows two options", async ({ page }) => {
+    // First we need a started game - create game, add round, add question, start
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: /games/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    await page.click('button:has-text("Create Game")');
+    await expect(page).toHaveURL(/\/admin\/games\//, { timeout: 10000 });
+
+    // Add a round
+    await page.click('button:has-text("Add Round")');
+    await page.fill('input[placeholder="Round title..."]', "Test Round");
+    await page.click('button:has-text("Create")');
+    await expect(page.getByText(/Round 1: Test Round/i)).toBeVisible();
+
+    // Add a question with required fields
+    await page.click('button:has-text("Add Question")');
+    await expect(page.getByText("New Question")).toBeVisible();
+    await page.fill('textarea[placeholder="Enter the question..."]', "Test question");
+    await page.fill('input[placeholder="Enter the correct answer..."]', "Test answer");
+    await page.click('button:has-text("Create Question")');
+
+    // Wait for panel to close
+    await expect(page.getByText("New Question")).not.toBeVisible({ timeout: 10000 });
+
+    // Start the game
+    await page.click('button:has-text("Start Game")');
+
+    // Now game should be in progress - Reset Game button should appear
+    await expect(page.getByRole("button", { name: /reset game/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Click reset
+    await page.click('button:has-text("Reset Game")');
+
+    // Dialog should show two options
+    await expect(page.getByText("Keep Teams")).toBeVisible();
+    await expect(page.getByText("Full Reset")).toBeVisible();
+  });
+
+  test("can reset game with full reset option", async ({ page }) => {
+    // Create and start a game
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: /games/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    await page.click('button:has-text("Create Game")');
+    await expect(page).toHaveURL(/\/admin\/games\//, { timeout: 10000 });
+
+    // Add a round and question with required fields
+    await page.click('button:has-text("Add Round")');
+    await page.fill('input[placeholder="Round title..."]', "Test Round");
+    await page.click('button:has-text("Create")');
+    await page.click('button:has-text("Add Question")');
+    await page.fill('textarea[placeholder="Enter the question..."]', "Test question");
+    await page.fill('input[placeholder="Enter the correct answer..."]', "Test answer");
+    await page.click('button:has-text("Create Question")');
+    await expect(page.getByText("New Question")).not.toBeVisible({ timeout: 10000 });
+
+    // Start the game
+    await page.click('button:has-text("Start Game")');
+    await expect(page.getByRole("button", { name: /reset game/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Click reset and choose Full Reset
+    await page.click('button:has-text("Reset Game")');
+    await page.click('text=Full Reset');
+
+    // Game should return to editable state (Start Game button visible again)
+    await expect(page.getByRole("button", { name: /start game/i })).toBeVisible({
+      timeout: 10000,
+    });
+  });
+});
+
+test.describe("Live Status Host Button", () => {
+  test("shows LIVE indicator when game is in progress", async ({ page }) => {
+    // Create and start a game
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: /games/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    await page.click('button:has-text("Create Game")');
+    await expect(page).toHaveURL(/\/admin\/games\//, { timeout: 10000 });
+
+    // Add a round and question with required fields
+    await page.click('button:has-text("Add Round")');
+    await page.fill('input[placeholder="Round title..."]', "Test Round");
+    await page.click('button:has-text("Create")');
+    await page.click('button:has-text("Add Question")');
+    await page.fill('textarea[placeholder="Enter the question..."]', "Test question");
+    await page.fill('input[placeholder="Enter the correct answer..."]', "Test answer");
+    await page.click('button:has-text("Create Question")');
+    await expect(page.getByText("New Question")).not.toBeVisible({ timeout: 10000 });
+
+    // Start the game
+    await page.click('button:has-text("Start Game")');
+
+    // Should show LIVE button with team count
+    await expect(page.getByRole("button", { name: /live.*teams/i })).toBeVisible({
+      timeout: 10000,
+    });
+  });
+});
+
+test.describe("Reset Button in Games List", () => {
+  test("reset button appears on in-progress game in list view", async ({ page }) => {
+    // Create and start a game
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: /games/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    await page.click('button:has-text("Create Game")');
+    await expect(page).toHaveURL(/\/admin\/games\//, { timeout: 10000 });
+
+    // Add a round and question with required fields
+    await page.click('button:has-text("Add Round")');
+    await page.fill('input[placeholder="Round title..."]', "Test Round");
+    await page.click('button:has-text("Create")');
+    await page.click('button:has-text("Add Question")');
+    await page.fill('textarea[placeholder="Enter the question..."]', "Test question");
+    await page.fill('input[placeholder="Enter the correct answer..."]', "Test answer");
+    await page.click('button:has-text("Create Question")');
+    await expect(page.getByText("New Question")).not.toBeVisible({ timeout: 10000 });
+
+    // Start the game
+    await page.click('button:has-text("Start Game")');
+    await expect(page.getByRole("button", { name: /reset game/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Go back to games list
+    await page.click('button:has-text("Back to Games")');
+    await expect(page).toHaveURL("/admin");
+
+    // The game card should show at least one "In Progress" badge
+    await expect(page.getByText("In Progress").first()).toBeVisible({ timeout: 10000 });
+    
+    // Reset button (RotateCcw icon) should be visible on at least one card
+    await expect(page.locator('button[title="Reset Game"]').first()).toBeVisible();
+  });
 });

@@ -33,6 +33,7 @@ import {
   Music,
   Video,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import { DeleteDialog } from "./delete-dialog";
 
@@ -61,12 +62,16 @@ interface QuestionListProps {
 interface SortableQuestionProps {
   question: Question;
   isEditable: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   onEdit: () => void;
 }
 
 function SortableQuestion({
   question,
   isEditable,
+  isExpanded,
+  onToggleExpand,
   onEdit,
 }: SortableQuestionProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -146,81 +151,209 @@ function SortableQuestion({
     }
   };
 
+  const getAnswerPreview = () => {
+    if (question.type === "multiple_choice" && question.options) {
+      const correctIndex = question.options.indexOf(question.correctAnswer);
+      return `Answer: ${String.fromCharCode(65 + correctIndex)}) ${question.correctAnswer}`;
+    }
+    if (question.answerFields && question.answerFields.length > 0) {
+      return question.answerFields
+        .map((f) => `${f.label}: ${f.correctAnswer}`)
+        .join(" | ");
+    }
+    return `Answer: ${question.correctAnswer}`;
+  };
+
   return (
     <>
       <div
         ref={setNodeRef}
         style={style}
-        className="flex items-center gap-2 p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group"
+        className="bg-slate-900/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors"
       >
-        {isEditable && (
-          <button
-            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="w-4 h-4" />
-          </button>
-        )}
-
-        <div className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center text-xs text-slate-400 font-medium">
-          {question.indexInRound + 1}
-        </div>
-
-        {getTypeIcon()}
-
-        <div className="flex-1 min-w-0">
-          <p className="text-slate-300 text-sm truncate">{question.prompt}</p>
-        </div>
-
-        {getTypeBadge()}
-
-        {question.answerFields && question.answerFields.length > 0 && (
-          <Badge
-            variant="secondary"
-            className="bg-amber-500/20 text-amber-400 text-xs"
-          >
-            {question.answerFields.length} fields
-          </Badge>
-        )}
-
-        <Badge
-          variant="secondary"
-          className="bg-slate-700 text-slate-400 text-xs"
+        {/* Collapsed Header - Always visible */}
+        <div
+          className="flex items-center gap-2 p-3 cursor-pointer"
+          onClick={onToggleExpand}
         >
-          {question.points} pts
-        </Badge>
-
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onEdit}
-            className="h-7 w-7 text-slate-400 hover:text-white"
-          >
-            <Edit2 className="w-3 h-3" />
-          </Button>
           {isEditable && (
-            <>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleDuplicate}
-                className="h-7 w-7 text-slate-400 hover:text-white"
-              >
-                <Copy className="w-3 h-3" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="h-7 w-7 text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </>
+            <button
+              className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400"
+              onClick={(e) => e.stopPropagation()}
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
           )}
+
+          <div className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center text-xs text-slate-400 font-medium shrink-0">
+            {question.indexInRound + 1}
+          </div>
+
+          {getTypeIcon()}
+
+          <div className="flex-1 min-w-0">
+            <p className={`text-slate-300 text-sm ${isExpanded ? "" : "truncate"}`}>
+              {question.prompt}
+            </p>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2">
+            {getTypeBadge()}
+
+            {question.answerFields && question.answerFields.length > 0 && (
+              <Badge
+                variant="secondary"
+                className="bg-amber-500/20 text-amber-400 text-xs"
+              >
+                {question.answerFields.length} fields
+              </Badge>
+            )}
+
+            <Badge
+              variant="secondary"
+              className="bg-slate-700 text-slate-400 text-xs"
+            >
+              {question.points} pts
+            </Badge>
+          </div>
+
+          {/* Desktop hover actions */}
+          <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="h-7 w-7 text-slate-400 hover:text-white"
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+            {isEditable && (
+              <>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDuplicate();
+                  }}
+                  className="h-7 w-7 text-slate-400 hover:text-white"
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteDialogOpen(true);
+                  }}
+                  className="h-7 w-7 text-red-400 hover:text-red-300"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile expand indicator */}
+          <ChevronDown
+            className={`w-4 h-4 text-slate-500 sm:hidden transition-transform ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          />
         </div>
+
+        {/* Expanded Content - Mobile friendly */}
+        {isExpanded && (
+          <div className="px-3 pb-3 pt-0 border-t border-slate-700/50">
+            {/* Mobile badges */}
+            <div className="flex flex-wrap gap-2 mb-3 pt-3 sm:hidden">
+              {getTypeBadge()}
+              {question.answerFields && question.answerFields.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-500/20 text-amber-400 text-xs"
+                >
+                  {question.answerFields.length} fields
+                </Badge>
+              )}
+              <Badge
+                variant="secondary"
+                className="bg-slate-700 text-slate-400 text-xs"
+              >
+                {question.points} pts
+              </Badge>
+            </div>
+
+            {/* Answer preview */}
+            <p className="text-slate-400 text-xs mb-3 bg-slate-800/50 rounded p-2">
+              {getAnswerPreview()}
+            </p>
+
+            {/* Multiple choice options */}
+            {question.type === "multiple_choice" && question.options && (
+              <div className="space-y-1 mb-3">
+                {question.options.map((option, idx) => (
+                  <div
+                    key={idx}
+                    className={`text-xs px-2 py-1 rounded ${
+                      option === question.correctAnswer
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-slate-800/50 text-slate-400"
+                    }`}
+                  >
+                    {String.fromCharCode(65 + idx)}) {option}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="flex-1 sm:flex-none bg-slate-700 hover:bg-slate-600 text-white"
+              >
+                <Edit2 className="w-3 h-3 mr-1" />
+                Edit
+              </Button>
+              {isEditable && (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDuplicate();
+                    }}
+                    className="flex-1 sm:flex-none bg-slate-700 hover:bg-slate-600 text-white"
+                  >
+                    <Copy className="w-3 h-3 mr-1" />
+                    Duplicate
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteDialogOpen(true);
+                    }}
+                    className="bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <DeleteDialog
@@ -241,6 +374,7 @@ export function QuestionList({
   onEdit,
   onNew,
 }: QuestionListProps) {
+  const [expandedQuestionId, setExpandedQuestionId] = useState<Id<"questions"> | null>(null);
   const reorderQuestions = useMutation(api.questions.reorder);
 
   const sensors = useSensors(
@@ -264,6 +398,10 @@ export function QuestionList({
     }
   };
 
+  const handleToggleExpand = (questionId: Id<"questions">) => {
+    setExpandedQuestionId((prev) => (prev === questionId ? null : questionId));
+  };
+
   return (
     <div className="space-y-2">
       <DndContext
@@ -280,6 +418,8 @@ export function QuestionList({
               key={question._id}
               question={question}
               isEditable={isEditable}
+              isExpanded={expandedQuestionId === question._id}
+              onToggleExpand={() => handleToggleExpand(question._id)}
               onEdit={() => onEdit(question._id)}
             />
           ))}

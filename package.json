@@ -16,9 +16,11 @@
     "seed:clear:prod": "npx convex run seed:clearDatabase --prod",
     "db:reset": "npm run seed:clear && npm run seed",
     "db:reset:prod": "node scripts/reset-prod.js",
+    "deploy": "npx convex deploy --yes && git push",
+    "deploy:convex": "npx convex deploy --yes",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "xcc": "playwright test --headed"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

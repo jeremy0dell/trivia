@@ -1,9 +1,10 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Play,
   Pause,
@@ -11,6 +12,10 @@ import {
   CheckCircle,
   Trophy,
   ChevronRight,
+  Lock,
+  Unlock,
+  Trash2,
+  Users,
 } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -23,6 +28,9 @@ interface HostControlsProps {
   currentQuestionIndex: number | null;
   totalQuestions: number;
   rounds: Array<{ _id: Id<"rounds">; title: string; roundNumber: number }>;
+  isLobbyLocked?: boolean;
+  maxTeams?: number;
+  teamCount?: number;
 }
 
 export function HostControls({
@@ -32,6 +40,9 @@ export function HostControls({
   currentQuestionIndex,
   totalQuestions,
   rounds,
+  isLobbyLocked = false,
+  maxTeams = 20,
+  teamCount = 0,
 }: HostControlsProps) {
   const updateState = useMutation(api.games.updateState);
   const startRound = useMutation(api.games.startRound);
@@ -39,6 +50,8 @@ export function HostControls({
   const advanceRound = useMutation(api.games.advanceRound);
   const autoGrade = useMutation(api.scoring.autoGradeQuestion);
   const finalizeQuestion = useMutation(api.scoring.finalizeQuestion);
+  const toggleLobbyLock = useMutation(api.games.toggleLobbyLock);
+  const clearAllTeams = useMutation(api.teams.clearAllTeams);
 
   const currentRound = rounds.find((r) => r._id === currentRoundId);
   const isLastQuestion =
@@ -51,6 +64,16 @@ export function HostControls({
   const handleStartGame = async () => {
     if (rounds.length > 0) {
       await startRound({ gameId, roundId: rounds[0]._id });
+    }
+  };
+
+  const handleToggleLock = async () => {
+    await toggleLobbyLock({ gameId });
+  };
+
+  const handleClearAllTeams = async () => {
+    if (confirm("Are you sure you want to remove all teams?")) {
+      await clearAllTeams({ gameId });
     }
   };
 
@@ -87,10 +110,53 @@ export function HostControls({
       </CardHeader>
       <CardContent className="space-y-4">
         {gameState === "lobby" && (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Team count */}
+            <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Teams Joined</span>
+              </div>
+              <Badge variant="secondary" className="font-mono">
+                {teamCount} / {maxTeams}
+              </Badge>
+            </div>
+
+            {/* Lobby controls */}
+            <div className="flex gap-2">
+              <Button
+                variant={isLobbyLocked ? "default" : "outline"}
+                className={`flex-1 ${isLobbyLocked ? "bg-red-500 hover:bg-red-600" : ""}`}
+                onClick={handleToggleLock}
+              >
+                {isLobbyLocked ? (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Lobby Locked
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="w-4 h-4 mr-2" />
+                    Lock Lobby
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                onClick={handleClearAllTeams}
+                disabled={teamCount === 0}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+
             <p className="text-sm text-muted-foreground">
-              Waiting for teams to join. Start when ready.
+              {isLobbyLocked
+                ? "Lobby is locked. No new teams can join."
+                : "Waiting for teams to join. Start when ready."}
             </p>
+
             <Button
               className="w-full"
               size="lg"
@@ -169,8 +235,6 @@ interface GradingControlsProps {
   onAutoGrade: (questionId: Id<"questions">) => Promise<void>;
   onFinalizeAndAdvance: (questionId: Id<"questions">) => Promise<void>;
 }
-
-import { useQuery } from "convex/react";
 
 function GradingControls({
   currentRoundId,

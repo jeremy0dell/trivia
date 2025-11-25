@@ -41,6 +41,8 @@ export default defineSchema({
     description: v.optional(v.string()),
     state: gameState,
     isArchived: v.optional(v.boolean()),
+    isLobbyLocked: v.optional(v.boolean()),
+    maxTeams: v.optional(v.number()),
     currentRoundId: v.optional(v.id("rounds")),
     currentQuestionIndex: v.optional(v.number()),
     createdAt: v.number(),
